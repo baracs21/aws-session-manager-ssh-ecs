@@ -1,0 +1,3 @@
+"cloudformation:*",
+"ssm:*",
+"sts:*"

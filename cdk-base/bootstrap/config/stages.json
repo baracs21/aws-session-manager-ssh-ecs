@@ -1,0 +1,14 @@
+[
+  {
+    "stage": "dev",
+    "account_id": "123456789012",
+    "profile": "dev",
+    "region": "eu-west-1"
+  },
+  {
+    "stage": "prod",
+    "account_id": "234567890123",
+    "profile": "prod",
+    "region": "eu-west-1"
+  }
+]

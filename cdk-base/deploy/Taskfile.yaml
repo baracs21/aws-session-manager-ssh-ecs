@@ -1,0 +1,32 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  AWS_ACCOUNT:
+    sh: echo $AWS_ACCOUNT_ID
+  AWS_PROFILE:
+    sh: echo $AWS_PROFILE
+  AWS_REGION:
+    sh: echo $AWS_REGION
+
+tasks:
+
+  preconditions:
+    dir: ./scripts
+    desc: checks all needed tools for the cdk deployment
+    cmds:
+      - chmod +x pre-conditions.sh && ./pre-conditions.sh
+    silent: true
+
+  deploy:
+    dir: ./infrastructure
+    deps: [ preconditions ]
+    desc: synth and deploy the cdk application
+    cmds:
+      - rm -rf cdk.out
+      - rm -f cdk.context.json
+      - npm i
+      - CDK_DISABLE_STACK_TRACE=1 cdk synth --profile {{.AWS_PROFILE}}
+      - cdk deploy --profile {{.AWS_PROFILE}}
+    silent: true

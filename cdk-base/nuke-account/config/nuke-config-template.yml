@@ -1,0 +1,22 @@
+regions:
+- eu-west-1
+- global
+
+account-blocklist:
+- "999999999999" # production
+
+accounts:
+  "{{ACCOUNT}}": # {{ALIAS}}
+    filters:
+      IAMUser:
+      - "daily-admin"
+      IAMRole:
+      - "daily-admin-role"
+      IAMPolicy:
+      - "arn:aws:iam::{{ACCOUNT}}:policy/daily-admin-policy"
+      IAMVirtualMFADevice:
+      - "arn:aws:iam::{{ACCOUNT}}:mfa/daily-admin"
+      IAMRolePolicyAttachment:
+      - "daily-admin-role -> AdministratorAccess"
+      IAMUserAccessKey:
+      - "daily-admin -> AKIAXJJWX3NL67KXYVMK"

@@ -1,0 +1,38 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  AWS_ACCOUNT:
+    sh: echo $AWS_ACCOUNT_ID
+  AWS_PROFILE:
+    sh: echo $AWS_PROFILE
+  AWS_REGION:
+    sh: echo $AWS_REGION
+  AWS_ALIAS:
+    sh: echo $AWS_ALIAS
+
+tasks:
+
+  preconditions:
+    desc: checks the preconditions
+    dir: ./scripts
+    cmds:
+      - ./pre-conditions.sh
+    silent: true
+
+  install:
+    deps: [ preconditions ]
+    desc: install aws nuke tool
+    dir: ./scripts
+    cmds:
+      - ./install-aws-nuke.sh
+    silent: true
+
+  account:
+    deps: [ preconditions ]
+    desc: nuke the aws account
+    dir: ./scripts
+    cmds:
+      - ./nuke-aws-account.sh {{.AWS_ACCOUNT}} {{.AWS_PROFILE}} {{.AWS_ALIAS}}
+    silent: true
