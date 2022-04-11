@@ -120,7 +120,7 @@ export class InfrastructureStack extends Stack {
           'curl localhost:8080/status'
         ],
         retries: 3,
-        interval: Duration.seconds(10)
+        interval: Duration.seconds(10),
       }
     })
 

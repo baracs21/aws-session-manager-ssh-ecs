@@ -2,8 +2,11 @@
 
 ## Use Case
 
-Sometimes it is needed to access an ecs fargate task for debugging purpose, or you have the need to access private aws resources (i.e. document db in private subnet). This example make it possible to access an ecs task or to establish an ssh tunnel to access private aws resources from your local machine.
+Sometimes it is needed to access an ecs fargate task for debugging purpose, or you have the need to access private aws resources (i.e. document db in private subnet). This example describes the possibility to access an ecs task and or to establish an ssh tunnel to access private aws resources from your local machine.
 
+![architecture_overview](docs/arc.png)
+
+All needed resources will be described in detailed in the following steps and the cdk code ;)
 
 ## Checkout
 

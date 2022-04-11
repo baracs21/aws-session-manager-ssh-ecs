@@ -31,6 +31,10 @@ tasks:
       - docker build --build-arg GO_WORKDIR=server -t app:latest .
     silent: true
 
-
+  docs:
+    dir: ./docs
+    cmds:
+      - drawio -x -f png -o arc.png arc.drawio
+    silent: true
 
 
