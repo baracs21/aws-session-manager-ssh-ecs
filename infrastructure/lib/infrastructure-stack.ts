@@ -1,4 +1,4 @@
-import {Duration, Stack, StackProps} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Stack, StackProps} from 'aws-cdk-lib';
 import {Construct} from 'constructs';
 import {
   GatewayVpcEndpointAwsService,
@@ -9,10 +9,11 @@ import {
   SubnetType,
   Vpc
 } from "aws-cdk-lib/aws-ec2";
-import {Cluster, ContainerImage, FargateService, FargateTaskDefinition} from "aws-cdk-lib/aws-ecs";
+import {Cluster, ContainerImage, FargateService, FargateTaskDefinition, LogDriver} from "aws-cdk-lib/aws-ecs";
 import {DockerImageAsset} from "aws-cdk-lib/aws-ecr-assets";
 import * as path from "path";
 import {CfnServiceLinkedRole, Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
+import {LogGroup, RetentionDays} from "aws-cdk-lib/aws-logs";
 
 
 export class InfrastructureStack extends Stack {
@@ -89,7 +90,7 @@ export class InfrastructureStack extends Stack {
 
     const cluster = new Cluster(this, 'cluster', {
       vpc: vpc,
-      containerInsights: false
+      containerInsights: false,
     })
 
     const taskDefinition = new FargateTaskDefinition(this, 'tunnel-task', {
@@ -121,7 +122,15 @@ export class InfrastructureStack extends Stack {
         ],
         retries: 3,
         interval: Duration.seconds(10),
-      }
+      },
+      logging: LogDriver.awsLogs({
+        streamPrefix: "ecs",
+        logGroup: new LogGroup(this, 'ecs-log-group', {
+          logGroupName: 'ssh-tunnel-lg',
+          removalPolicy: RemovalPolicy.DESTROY,
+          retention: RetentionDays.ONE_DAY
+        })
+      })
     })
 
     const sg = new SecurityGroup(this, 'tunnel-sg', {
@@ -129,6 +138,7 @@ export class InfrastructureStack extends Stack {
       allowAllOutbound: false
     })
     sg.addEgressRule(vpceSg, Port.tcp(443), 'allow communication with vpcendpoints')
+    sg.addEgressRule(Peer.prefixList('pl-6da54004'), Port.tcp(443), 'allow communication with s3 over prefix list')
 
     new FargateService(this, 'tunnel-fargate-service', {
       serviceName: 'tunnel',
@@ -145,4 +155,5 @@ export class InfrastructureStack extends Stack {
     })
 
   }
+
 }

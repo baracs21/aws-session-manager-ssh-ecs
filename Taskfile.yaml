@@ -37,4 +37,11 @@ tasks:
       - drawio -x -f png -o arc.png arc.drawio
     silent: true
 
+  start-session:
+    dir: ./scripts
+    desc: starts a session to your running container
+    cmds:
+      - ./start-session.sh
+    silent: true
+
 

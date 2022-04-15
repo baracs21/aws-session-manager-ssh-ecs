@@ -15,6 +15,7 @@ Please use `git clone --recursive -j8 git@github.com:baracs21/aws-examples.git`,
 ## References
 
 - https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+- https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html
 
 ## Notes
 
