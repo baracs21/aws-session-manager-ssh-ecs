@@ -1,7 +1,10 @@
-import {Duration, RemovalPolicy, Stack, StackProps} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Stack, StackProps, Tags} from 'aws-cdk-lib';
 import {Construct} from 'constructs';
 import {
   GatewayVpcEndpointAwsService,
+  InstanceClass,
+  InstanceSize,
+  InstanceType,
   InterfaceVpcEndpointAwsService,
   Peer,
   Port,
@@ -14,6 +17,7 @@ import {DockerImageAsset} from "aws-cdk-lib/aws-ecr-assets";
 import * as path from "path";
 import {CfnServiceLinkedRole, Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
 import {LogGroup, RetentionDays} from "aws-cdk-lib/aws-logs";
+import {DatabaseCluster} from "aws-cdk-lib/aws-docdb";
 
 
 export class InfrastructureStack extends Stack {
@@ -21,7 +25,7 @@ export class InfrastructureStack extends Stack {
     super(scope, id, props);
 
     const vpc = new Vpc(this, 'vpc', {
-      maxAzs: 1,
+      maxAzs: 2,
       cidr: '10.10.42.0/24',
       enableDnsHostnames: true,
       enableDnsSupport: true,
@@ -37,9 +41,8 @@ export class InfrastructureStack extends Stack {
       vpc: vpc,
       allowAllOutbound: true
     })
-    vpceSg.addIngressRule(Peer.anyIpv4(), Port.tcp(443), 'allow all inbound from 443')
 
-    vpc.addInterfaceEndpoint('ssmvpce', {
+    const ssmVpcEndpoint = vpc.addInterfaceEndpoint('ssmvpce', {
       service: InterfaceVpcEndpointAwsService.SSM,
       subnets: {
         subnetType: SubnetType.PRIVATE_ISOLATED,
@@ -48,7 +51,8 @@ export class InfrastructureStack extends Stack {
         vpceSg
       ]
     })
-    vpc.addGatewayEndpoint('s3vpce', {
+
+    const s3VpcEndpoint = vpc.addGatewayEndpoint('s3vpce', {
       service: GatewayVpcEndpointAwsService.S3,
       subnets: [
         {
@@ -56,7 +60,8 @@ export class InfrastructureStack extends Stack {
         }
       ]
     })
-    vpc.addInterfaceEndpoint('ecrvpce', {
+
+    const ecrVpcEndpoint = vpc.addInterfaceEndpoint('ecrvpce', {
       service: InterfaceVpcEndpointAwsService.ECR,
       subnets: {
         subnetType: SubnetType.PRIVATE_ISOLATED
@@ -65,7 +70,8 @@ export class InfrastructureStack extends Stack {
         vpceSg
       ]
     })
-    vpc.addInterfaceEndpoint('dkr', {
+
+    const dkrVpcEndpoint = vpc.addInterfaceEndpoint('dkr', {
       service: InterfaceVpcEndpointAwsService.ECR_DOCKER,
       subnets: {
         subnetType: SubnetType.PRIVATE_ISOLATED
@@ -74,8 +80,19 @@ export class InfrastructureStack extends Stack {
         vpceSg
       ]
     })
-    vpc.addInterfaceEndpoint('ssmmessages', {
+
+    const ssmMessageVpcEndpoint = vpc.addInterfaceEndpoint('ssmmessages', {
       service: InterfaceVpcEndpointAwsService.SSM_MESSAGES,
+      subnets: {
+        subnetType: SubnetType.PRIVATE_ISOLATED,
+      },
+      securityGroups: [
+        vpceSg
+      ]
+    })
+
+    const cwlVpcEndpoints = vpc.addInterfaceEndpoint('cwl', {
+      service: InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
       subnets: {
         subnetType: SubnetType.PRIVATE_ISOLATED,
       },
@@ -91,6 +108,7 @@ export class InfrastructureStack extends Stack {
     const cluster = new Cluster(this, 'cluster', {
       vpc: vpc,
       containerInsights: false,
+      clusterName: 'baracs-cluster'
     })
 
     const taskDefinition = new FargateTaskDefinition(this, 'tunnel-task', {
@@ -137,11 +155,12 @@ export class InfrastructureStack extends Stack {
       vpc: vpc,
       allowAllOutbound: false
     })
+
     sg.addEgressRule(vpceSg, Port.tcp(443), 'allow communication with vpcendpoints')
     sg.addEgressRule(Peer.prefixList('pl-6da54004'), Port.tcp(443), 'allow communication with s3 over prefix list')
 
-    new FargateService(this, 'tunnel-fargate-service', {
-      serviceName: 'tunnel',
+    const tunnel = new FargateService(this, 'tunnel-fargate-service', {
+      serviceName: 'baracs-tunnel',
       cluster: cluster,
       taskDefinition: taskDefinition,
       securityGroups: [
@@ -153,7 +172,26 @@ export class InfrastructureStack extends Stack {
         subnetType: SubnetType.PRIVATE_ISOLATED
       },
     })
+    tunnel.node.addDependency(ecrVpcEndpoint, s3VpcEndpoint, dkrVpcEndpoint, cwlVpcEndpoints, ssmMessageVpcEndpoint, ssmVpcEndpoint)
 
+    const dbCluster = new DatabaseCluster(this, 'baracs-docdb', {
+      vpc: vpc,
+      dbClusterName: 'baracs-db-cluster',
+      vpcSubnets: {
+        subnetType: SubnetType.PRIVATE_ISOLATED
+      },
+      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MEDIUM),
+      masterUser: {
+        username: 'baracs'
+      },
+      cloudWatchLogsRetention: RetentionDays.ONE_DAY,
+      removalPolicy: RemovalPolicy.DESTROY,
+      instances: 1
+    })
+
+    dbCluster.connections.allowDefaultPortFrom(tunnel)
+
+    Tags.of(this).add('context', 'baracs');
   }
 
 }

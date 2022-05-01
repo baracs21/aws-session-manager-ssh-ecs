@@ -2,16 +2,41 @@
 
 set -euo pipefail
 
-CLUSTER_ARN=$(aws ecs list-clusters | jq -r '.clusterArns | .[0]')
-TASK_ARN=$(aws ecs list-tasks --cluster "$CLUSTER_ARN"| jq -r '.taskArns | .[0]')
-RUNTIME_ID=$(aws ecs describe-tasks --tasks "$TASK_ARN" --cluster "$CLUSTER_ARN" | jq -r '.tasks | .[] | .containers | .[0] | .runtimeId')
+PROFILE=$1
+CLUSTER_NAME=$2
+SERVICE_NAME=$3
 
-target() {
-  clusterName=$(echo "$CLUSTER_ARN" | cut -d "/" -f2)
-  taskName=$(echo "$TASK_ARN" | cut -d "/" -f3)
-
-  echo "ecs:${clusterName}_${taskName}_${RUNTIME_ID}"
+function get_task_name() {
+  tasks=$(aws ecs list-tasks \
+    --cluster "$CLUSTER_NAME" \
+    --service-name "$SERVICE_NAME" \
+    --profile "$PROFILE")
+  echo "👷 tasks: $(echo "$tasks" | jq -r '.taskArns | map(split("/") | .[-1]) | join(", ")')"
+  taskName=$(echo "$tasks" | jq -r '.taskArns[-1] | split("/") | .[-1]')
+  echo "➡️  selected task: ${taskName}"
 }
 
-target=$(target)
-aws ssm start-session --target "$target"
+function get_runtime_id() {
+  runtimeId=$(aws ecs describe-tasks \
+    --tasks "$taskName" \
+    --cluster baracs-cluster \
+    --profile "$PROFILE" | jq -r '.tasks[0].containers[0].runtimeId')
+}
+
+function get_target() {
+  get_task_name
+  get_runtime_id
+  target="ecs:${CLUSTER_NAME}_${taskName}_${runtimeId}"
+}
+
+function start_session() {
+  echo "➡️  selected cluster: ${CLUSTER_NAME}"
+  echo "➡️  selected service: ${SERVICE_NAME}"
+  get_target
+  echo "🎯 Connecting to target: $target"
+  aws ssm start-session \
+    --target "$target" \
+    --profile "$PROFILE"
+}
+
+start_session

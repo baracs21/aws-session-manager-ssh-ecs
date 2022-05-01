@@ -41,7 +41,12 @@ tasks:
     dir: ./scripts
     desc: starts a session to your running container
     cmds:
-      - ./start-session.sh
+      - ./start-session.sh {{.AWS_PROFILE}} baracs-cluster baracs-tunnel
     silent: true
 
-
+  start-ssh-tunnel:
+    dir: ./scripts
+    desc: starts a session to your running container
+    cmds:
+      - ./start-ssh-tunnel.sh {{.AWS_PROFILE}} baracs-cluster baracs-tunnel
+    silent: true

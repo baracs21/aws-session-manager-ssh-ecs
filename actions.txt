@@ -6,4 +6,6 @@
 "vpc:*",
 "ec2:*",
 "iam:*",
-"sts:*"
+"sts:*",
+"logs:*"
+"secretsmanager:*"
