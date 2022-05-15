@@ -3,7 +3,8 @@
 set -euo pipefail
 
 PROFILE=$1
-DATABASE_NAME=$2
+DB_CLUSTER=$2
+CREDENTIALS=
 
 sshPid=
 
@@ -28,15 +29,45 @@ function exitTrap() {
 trap exitTrap EXIT
 
 function start_ssh_tunnel() {
-  db_info
+  if [ "$CREDENTIALS" == "" ]; then
+    echo "Cluster $DB_CLUSTER not found."
+    exit 1
+  fi
 
-  ssh -L 27017:"$DATABASE_NAME":27017 -N -T root@127.0.0.1 -p 2222 -i "$HOME"/.ssh/baracs-tunnel &
-  sshPid=$!
+  port=$(echo "$CREDENTIALS" | jq -r '.port')
+  hostname=$(echo "$CREDENTIALS" | jq -r '.host')
+
+
+  echo "CONNECT"
+ # ssh -L 27017:"$DATABASE_NAME":27017 -N -T root@127.0.0.1 -p 2222 -i "$HOME"/.ssh/baracs-tunnel &
+ # sshPid=$!
 }
 
 function retrieve_credentials() {
-  aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:eu-west-1:501015370583:secret:baracsdocdbSecret500EB901-ygNOF9XJc5yj-KKxH6f | jq -r '.SecretString' | jq .
+  secrets=$(aws secretsmanager list-secrets --profile "$PROFILE" | jq -r '.SecretList | .[] | .ARN')
+  for secret in $secrets; do
+    secretValue=$(aws secretsmanager get-secret-value --secret-id "$secret" --query 'SecretString' --profile "$PROFILE" | jq -r .)
+    clusterName=$(echo "$secretValue" | jq -r .dbClusterIdentifier)
+    if [ "$clusterName" == "$DB_CLUSTER" ]; then
+#      echo "$secretValue"
+      CREDENTIALS=$secretValue
+    fi
+    break
+  done
 }
 
-start_ssh_tunnel
+function print_credentials() {
+   echo "$CREDENTIALS" | jq -r .
+}
+
+function monitor_connection() {
+  echo "SSM tunnel established... entering monitoring phase"
+  while lsof -i tcp:2222 &>/dev/null; do
+    sleep 5
+  done
+}
+
 retrieve_credentials
+start_ssh_tunnel
+print_credentials
+monitor_connection
