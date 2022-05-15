@@ -24,6 +24,12 @@ includes:
 
 tasks:
 
+  default:
+    desc: deploys the whole ssm ssh tunnel stack
+    cmds:
+      - task bootstrap:bootstrap-main-account
+      - task deploy:deploy
+
   build:
     desc: build the docker image for the server
     dir: infrastructure/lib/docker

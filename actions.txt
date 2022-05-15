@@ -7,5 +7,6 @@
 "ec2:*",
 "iam:*",
 "sts:*",
-"logs:*"
-"secretsmanager:*"
+"logs:*",
+"secretsmanager:*",
+"rds:*"
