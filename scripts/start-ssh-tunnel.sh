@@ -11,11 +11,11 @@ ssmPid=
 function cleanup() {
   set +e
   if [ -n "$ssmPid" ] && [ -n "$(ps -p "$ssmPid")" ]; then
-    echo "🔫 Killing SSM tunnel process $ssmPid"
+    echo "Killing SSM tunnel process $ssmPid"
     kill -9 "$ssmPid"
     killall session-manager-plugin
     while lsof -i tcp:2222 &>/dev/null; do
-      echo "⌛️ SSM still listening, give it a bit of time"
+      echo "SSM still listening, give it a bit of time"
       sleep 5
     done
   fi
@@ -33,9 +33,9 @@ function get_task_name() {
     --cluster "$CLUSTER_NAME" \
     --service-name "$SERVICE_NAME" \
     --profile "$PROFILE")
-  echo "👷 tasks: $(echo "$tasks" | jq -r '.taskArns | map(split("/") | .[-1]) | join(", ")')"
+  echo "tasks: $(echo "$tasks" | jq -r '.taskArns | map(split("/") | .[-1]) | join(", ")')"
   taskName=$(echo "$tasks" | jq -r '.taskArns[-1] | split("/") | .[-1]')
-  echo "➡️  selected task: ${taskName}"
+  echo "selected task: ${taskName}"
 }
 
 function get_runtime_id() {
@@ -58,33 +58,33 @@ function download_key() {
     --profile "$PROFILE" | jq -r '.Parameter | .Value')
   echo "$key" >"$HOME"/.ssh/baracs-tunnel
   chmod 600 "$HOME"/.ssh/baracs-tunnel
-  echo "✅ private ssh key saved to $HOME/.ssh/baracs-tunnel"
+  echo "private ssh key saved to $HOME/.ssh/baracs-tunnel"
 }
 
 function connect() {
-  echo "➡️  selected cluster: ${CLUSTER_NAME}"
-  echo "➡️  selected service: ${SERVICE_NAME}"
+  echo "selected cluster: ${CLUSTER_NAME}"
+  echo "selected service: ${SERVICE_NAME}"
   get_target
-  echo "🎯 Connecting to target: $target"
+  echo "Connecting to target: $target"
   aws ssm start-session \
     --target "$target" \
     --document-name "AWS-StartPortForwardingSession" \
     --profile "$PROFILE" \
     --parameters '{"portNumber": ["2222"], "localPortNumber": ["2222"]}' &
   ssmPid=$!
-  echo "🔌 SSM tunnel runs in process with pid ${ssmPid}, waiting for successful establishment"
+  echo "SSM tunnel runs in process with pid ${ssmPid}, waiting for successful establishment"
   while ! lsof -i tcp:2222 &>/dev/null; do
-    echo "⏳ Tunnel not ready, yet..."
+    echo "Tunnel not ready, yet..."
     sleep 5
   done
 }
 
 function monitor_connection() {
-  echo "✅ SSM tunnel established... entering monitoring phase"
+  echo "SSM tunnel established... entering monitoring phase"
   while lsof -i tcp:2222 &>/dev/null; do
     sleep 5
   done
-  echo "👻 SSM tunnel disappeared... I don't waste time finding it, let's re-create it"
+  echo "SSM tunnel disappeared..."
 }
 
 download_key

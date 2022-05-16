@@ -16,7 +16,7 @@ export class BaracsDocDb extends DatabaseCluster {
   constructor(scope: Construct, id: string, props: BaracsDocDbProps) {
     super(scope, id, {
       vpc: props.vpc,
-      dbClusterName: 'baracs-db-cluster',
+      dbClusterName: 'baracs-docdb-cluster',
       vpcSubnets: {
         subnetType: SubnetType.PRIVATE_ISOLATED
       },
