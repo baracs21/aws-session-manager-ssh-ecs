@@ -70,7 +70,7 @@ export class BaracsEcsCluster {
       })
     })
 
-    const sg = new SecurityGroup(this, 'tunnel-sg', {
+    const sg = new SecurityGroup(scope, 'tunnel-sg', {
       vpc: props.vpc,
       allowAllOutbound: false
     })
