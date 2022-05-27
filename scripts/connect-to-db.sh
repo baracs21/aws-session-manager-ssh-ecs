@@ -3,7 +3,7 @@
 set -euo pipefail
 
 PROFILE=$1
-DB_CLUSTER=$2
+SECRET_NAME=$2
 CREDENTIALS=
 
 sshPid=
@@ -29,11 +29,6 @@ function exitTrap() {
 trap exitTrap EXIT
 
 function start_ssh_tunnel() {
-  if [ "$CREDENTIALS" == "" ]; then
-    echo "Cluster $DB_CLUSTER not found."
-    exit 1
-  fi
-
   port=$(echo "$CREDENTIALS" | jq -r '.port')
   hostname=$(echo "$CREDENTIALS" | jq -r '.host')
 
@@ -42,19 +37,13 @@ function start_ssh_tunnel() {
 }
 
 function retrieve_credentials() {
-  secrets=$(aws secretsmanager list-secrets --profile "$PROFILE" | jq -r '.SecretList | .[] | .ARN')
-  for secret in $secrets; do
-    secretValue=$(aws secretsmanager get-secret-value --secret-id "$secret" --query 'SecretString' --profile "$PROFILE" | jq -r .)
-    clusterName=$(echo "$secretValue" | jq -r .dbClusterIdentifier)
-    if [ "$clusterName" == "$DB_CLUSTER" ]; then
-      CREDENTIALS=$secretValue
-    fi
-    break
-  done
+  secret=$SECRET_NAME
+  secretValue=$(aws secretsmanager get-secret-value --secret-id "$secret" --query 'SecretString' --profile "$PROFILE" | jq -r .)
+  CREDENTIALS=$secretValue
 }
 
 function print_credentials() {
-   echo "$CREDENTIALS" | jq -r .
+  echo "$CREDENTIALS" | jq -r .
 }
 
 connect() {
@@ -72,7 +61,7 @@ connect() {
     --tlsInsecure
 }
 
-retrieve_credentials
+retrieve_credentials "$SECRET_NAME"
 start_ssh_tunnel
 print_credentials
 connect

@@ -61,5 +61,5 @@ tasks:
     dir: ./scripts
     desc: connects to your documentdb
     cmds:
-      - ./connect-to-db.sh {{.AWS_PROFILE}} baracs-docdb-cluster
+      - ./connect-to-db.sh {{.AWS_PROFILE}} baracs-docdb
     silent: true

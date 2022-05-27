@@ -22,7 +22,8 @@ export class BaracsDocDb extends DatabaseCluster {
       },
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MEDIUM),
       masterUser: {
-        username: 'baracs'
+        username: 'baracs',
+        secretName: 'baracs-docdb'
       },
       cloudWatchLogsRetention: RetentionDays.ONE_DAY,
       removalPolicy: RemovalPolicy.DESTROY,
