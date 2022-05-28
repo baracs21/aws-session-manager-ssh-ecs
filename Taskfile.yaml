@@ -10,7 +10,7 @@ vars:
   AWS_REGION:
     sh: echo $AWS_REGION
   ACTIONS_FILE_PATH:
-    sh: echo $PWD/actions.txt
+    sh: echo $PWD/actions
 
 includes:
   nuke:
@@ -19,8 +19,8 @@ includes:
   bootstrap:
     taskfile: ./cdk-base/bootstrap/Taskfile.yaml
     dir: ./cdk-base/bootstrap
-  deploy:
-    taskfile: ./cdk-base/deploy/Taskfile.yaml
+  common:
+    taskfile: ./cdk-base/common/Taskfile.yaml
 
 tasks:
 
@@ -28,7 +28,7 @@ tasks:
     desc: deploys the whole ssm ssh tunnel stack
     cmds:
       - task bootstrap:bootstrap-main-account
-      - task deploy:deploy
+      - task common:deploy
 
   build:
     desc: build the docker image for the server
@@ -55,6 +55,13 @@ tasks:
     desc: starts a session to your running container
     cmds:
       - ./start-ssh-tunnel.sh {{.AWS_PROFILE}} baracs-cluster baracs-tunnel
+    silent: true
+
+  db-credentials:
+    dir: ./scripts
+    desc: prints your db credentials
+    cmds:
+      - ./db-credentials.sh {{.AWS_PROFILE}} baracs-docdb
     silent: true
 
   connect-to-db:

@@ -1,0 +1,12 @@
+cloudformation:*
+ssm:*
+dkr:*
+ecs:*
+ecr:*
+vpc:*
+ec2:*
+iam:*
+sts:*
+logs:*
+secretsmanager:*
+rds:*

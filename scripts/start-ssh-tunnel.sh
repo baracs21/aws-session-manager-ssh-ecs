@@ -84,7 +84,7 @@ function monitor_connection() {
   while lsof -i tcp:2222 &>/dev/null; do
     sleep 5
   done
-  echo "SSM tunnel disappeared..."
+  echo "SSM tunnel closed..."
 }
 
 download_key
